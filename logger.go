@@ -53,8 +53,11 @@ func Init(config Config) error {
 	encCfg.TimeKey = ""   // Handled in custom encoder.
 	encCfg.CallerKey = "" // Handled in custom encoder.
 
+	// File syncer with timestamped filename.
+	timestamp := time.Now().Format("02-01-2006-15-04-05")
+	filename := fmt.Sprintf("%s-%s.log", config.Filename, timestamp) // e.g., app-26-08-2025-15-04-05.log
 	// File syncer.
-	path := filepath.Join(config.Dir, config.Filename)
+	path := filepath.Join(config.Dir, filename)
 	if err := os.MkdirAll(config.Dir, 0755); err != nil {
 		return err
 	}
@@ -68,8 +71,9 @@ func Init(config Config) error {
 
 	// Field pool for zap.Field slices.
 	fieldPool := &sync.Pool{
-		New: func() interface{} {
-			return make([]zapcore.Field, 0, 1)
+		New: func() any {
+			slice := make([]zapcore.Field, 0, 1)
+			return &slice
 		},
 	}
 
@@ -154,5 +158,3 @@ func (w *bufferedWriter) Sync() error {
 	}
 	return nil
 }
-
-

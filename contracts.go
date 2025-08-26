@@ -17,44 +17,44 @@ func Fatal(message ...any) { log.zap.Fatal(fmt.Sprint(message...)) }
 
 // Public logging methods with traceID.
 func TraceWithTraceID(traceID string, message ...any) {
-	fields := log.fieldPool.Get().([]zapcore.Field)
+	fields := log.fieldPool.Get().(*[]zapcore.Field)
 	defer log.fieldPool.Put(fields)
-	fields = fields[:0]
-	fields = append(fields, zap.String("traceid", traceID))
-	log.zap.Debug(fmt.Sprint(message...), fields...)
+	*fields = (*fields)[:0]
+	*fields = append(*fields, zap.String("traceid", traceID))
+	log.zap.Debug(fmt.Sprint(message...), *fields...)
 }
 func DebugWithTraceID(traceID string, message ...any) {
-	fields := log.fieldPool.Get().([]zapcore.Field)
+	fields := log.fieldPool.Get().(*[]zapcore.Field)
 	defer log.fieldPool.Put(fields)
-	fields = fields[:0]
-	fields = append(fields, zap.String("traceid", traceID))
-	log.zap.Debug(fmt.Sprint(message...), fields...)
+	*fields = (*fields)[:0]
+	*fields = append(*fields, zap.String("traceid", traceID))
+	log.zap.Debug(fmt.Sprint(message...), *fields...)
 }
 func InfoWithTraceID(traceID string, message ...any) {
-	fields := log.fieldPool.Get().([]zapcore.Field)
+	fields := log.fieldPool.Get().(*[]zapcore.Field)
 	defer log.fieldPool.Put(fields)
-	fields = fields[:0]
-	fields = append(fields, zap.String("traceid", traceID))
-	log.zap.Info(fmt.Sprint(message...), fields...)
+	*fields = (*fields)[:0]
+	*fields = append(*fields, zap.String("traceid", traceID))
+	log.zap.Info(fmt.Sprint(message...), *fields...)
 }
 func WarnWithTraceID(traceID string, message ...any) {
-	fields := log.fieldPool.Get().([]zapcore.Field)
+	fields := log.fieldPool.Get().(*[]zapcore.Field)
 	defer log.fieldPool.Put(fields)
-	fields = fields[:0]
-	fields = append(fields, zap.String("traceid", traceID))
-	log.zap.Warn(fmt.Sprint(message...), fields...)
+	*fields = (*fields)[:0]
+	*fields = append(*fields, zap.String("traceid", traceID))
+	log.zap.Warn(fmt.Sprint(message...), *fields...)
 }
 func ErrorWithTraceID(traceID string, message ...any) {
-	fields := log.fieldPool.Get().([]zapcore.Field)
+	fields := log.fieldPool.Get().(*[]zapcore.Field)
 	defer log.fieldPool.Put(fields)
-	fields = fields[:0]
-	fields = append(fields, zap.String("traceid", traceID))
-	log.zap.Error(fmt.Sprint(message...), fields...)
+	*fields = (*fields)[:0]
+	*fields = append(*fields, zap.String("traceid", traceID))
+	log.zap.Error(fmt.Sprint(message...), *fields...)
 }
 func FatalWithTraceID(traceID string, message ...any) {
-	fields := log.fieldPool.Get().([]zapcore.Field)
+	fields := log.fieldPool.Get().(*[]zapcore.Field)
 	defer log.fieldPool.Put(fields)
-	fields = fields[:0]
-	fields = append(fields, zap.String("traceid", traceID))
-	log.zap.Fatal(fmt.Sprint(message...), fields...)
+	*fields = (*fields)[:0]
+	*fields = append(*fields, zap.String("traceid", traceID))
+	log.zap.Fatal(fmt.Sprint(message...), *fields...)
 }
