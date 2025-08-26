@@ -14,16 +14,10 @@ type customEncoder struct {
 }
 
 func (enc *customEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
-	// Create a map for fields.
-	fieldMap := make(map[string]any)
-	for _, f := range fields {
-		f.AddTo(zapcore.NewMapObjectEncoder())
-	}
-
 	buf := buffer.NewPool().Get()
 
 	// Timestamp.
-	buf.AppendString(entry.Time.Format("02-01-2006 15:04:05.000"))
+	buf.AppendString(entry.Time.Format("02/01/2006 15:04:05.000"))
 	buf.AppendString(" | ")
 
 	// Level.
@@ -43,27 +37,38 @@ func (enc *customEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Fiel
 	buf.AppendString(" | ")
 
 	// Trace if present.
-	if trace, ok := fieldMap["traceid"]; ok {
+	var traceID string
+	remainingFields := make([]zapcore.Field, 0, len(fields))
+	for _, f := range fields {
+		if f.Key == "traceid" && f.Type == zapcore.StringType {
+			traceID = f.String
+		} else {
+			remainingFields = append(remainingFields, f)
+		}
+	}
+	if traceID != "" {
 		buf.AppendString("TRACE : ")
-		buf.AppendString(fmt.Sprint(trace))
+		buf.AppendString(traceID)
 		buf.AppendString(" | ")
-		delete(fieldMap, "traceid")
 	}
 
 	// Message.
 	buf.AppendString(entry.Message)
 
 	// Any other fields as key=val.
-	for k, v := range fieldMap {
+	for _, f := range remainingFields {
 		buf.AppendByte(' ')
-		buf.AppendString(k)
+		buf.AppendString(f.Key)
 		buf.AppendByte('=')
-		if str, ok := v.(string); ok {
+		switch f.Type {
+		case zapcore.StringType:
 			buf.AppendByte('"')
-			buf.AppendString(str)
+			buf.AppendString(f.String)
 			buf.AppendByte('"')
-		} else {
-			buf.AppendString(fmt.Sprint(v))
+		case zapcore.Int64Type, zapcore.Int32Type, zapcore.Uint64Type, zapcore.Uint32Type:
+			buf.AppendString(fmt.Sprint(f.Integer))
+		default:
+			buf.AppendString(fmt.Sprint(f.Interface))
 		}
 	}
 

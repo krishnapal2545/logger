@@ -1,9 +1,12 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,7 +22,11 @@ type Config struct {
 
 // Logger wraps the Zap logger.
 type Logger struct {
-	zap *zap.Logger
+	zap       *zap.Logger
+	file      *os.File
+	buf       *bytes.Buffer
+	flush     chan struct{}
+	fieldPool *sync.Pool
 }
 
 // Global logger instance.
@@ -55,7 +62,40 @@ func Init(config Config) error {
 	if err != nil {
 		return err
 	}
-	fileSyncer := zapcore.AddSync(file)
+	// Buffered writer for file.
+	buf := bytes.NewBuffer(make([]byte, 0, 4096)) // 4KB buffer.
+	flush := make(chan struct{}, 1)
+
+	// Field pool for zap.Field slices.
+	fieldPool := &sync.Pool{
+		New: func() interface{} {
+			return make([]zapcore.Field, 0, 1)
+		},
+	}
+
+	// Start flush goroutine.
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-flush:
+				if buf.Len() > 0 {
+					if _, err := file.Write(buf.Bytes()); err != nil {
+						fmt.Fprintf(os.Stderr, "Failed to write to log file: %v\n", err)
+					}
+					buf.Reset()
+				}
+			case <-ticker.C:
+				if buf.Len() > 0 {
+					if _, err := file.Write(buf.Bytes()); err != nil {
+						fmt.Fprintf(os.Stderr, "Failed to write to log file: %v\n", err)
+					}
+					buf.Reset()
+				}
+			}
+		}
+	}()
 
 	// Console syncer.
 	consoleSyncer := zapcore.AddSync(os.Stdout)
@@ -71,7 +111,7 @@ func Init(config Config) error {
 	// Cores.
 	fileCore := zapcore.NewCore(
 		&customEncoder{Encoder: zapcore.NewJSONEncoder(encCfg)},
-		fileSyncer,
+		zapcore.AddSync(&bufferedWriter{file: file, buf: buf, flush: flush}),
 		fileEnabler,
 	)
 	consoleCore := zapcore.NewCore(
@@ -85,34 +125,34 @@ func Init(config Config) error {
 
 	// Build logger.
 	zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	log = &Logger{zap: zapLogger}
+	log = &Logger{zap: zapLogger, file: file, buf: buf, flush: flush, fieldPool: fieldPool}
 	return nil
 }
 
-// Public logging methods without traceID.
-func Trace(message ...any) { log.zap.Debug(fmt.Sprint(message...)) }
-func Debug(message ...any) { log.zap.Debug(fmt.Sprint(message...)) }
-func Info(message ...any)  { log.zap.Info(fmt.Sprint(message...)) }
-func Warn(message ...any)  { log.zap.Warn(fmt.Sprint(message...)) }
-func Error(message ...any) { log.zap.Error(fmt.Sprint(message...)) }
-func Fatal(message ...any) { log.zap.Fatal(fmt.Sprint(message...)) }
+// bufferedWriter wraps a file with buffering.
+type bufferedWriter struct {
+	file  *os.File
+	buf   *bytes.Buffer
+	flush chan struct{}
+}
 
-// Public logging methods with traceID.
-func TraceWithTraceID(traceID string, message ...any) {
-	log.zap.Debug(fmt.Sprint(message...), zap.String("traceid", traceID))
+func (w *bufferedWriter) Write(p []byte) (n int, err error) {
+	n = len(p)
+	if w.buf.Len()+n > 4096 { // Flush if buffer exceeds 4KB.
+		select {
+		case w.flush <- struct{}{}:
+		default:
+		}
+	}
+	return w.buf.Write(p)
 }
-func DebugWithTraceID(traceID string, message ...any) {
-	log.zap.Debug(fmt.Sprint(message...), zap.String("traceid", traceID))
+
+func (w *bufferedWriter) Sync() error {
+	select {
+	case w.flush <- struct{}{}:
+	default:
+	}
+	return nil
 }
-func InfoWithTraceID(traceID string, message ...any) {
-	log.zap.Info(fmt.Sprint(message...), zap.String("traceid", traceID))
-}
-func WarnWithTraceID(traceID string, message ...any) {
-	log.zap.Warn(fmt.Sprint(message...), zap.String("traceid", traceID))
-}
-func ErrorWithTraceID(traceID string, message ...any) {
-	log.zap.Error(fmt.Sprint(message...), zap.String("traceid", traceID))
-}
-func FatalWithTraceID(traceID string, message ...any) {
-	log.zap.Fatal(fmt.Sprint(message...), zap.String("traceid", traceID))
-}
+
+
