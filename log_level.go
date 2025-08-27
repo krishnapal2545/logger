@@ -10,19 +10,17 @@ import (
 type LogLevel int
 
 const (
-	TraceLevel LogLevel = iota - 1 // Zap's Debug is 0, so Trace is -1.
-	DebugLevel
+	DebugLevel LogLevel = iota - 1 // Zap's Info is 0, so Trace is -1.
 	InfoLevel
 	WarnLevel
 	ErrorLevel
+	PanicLevel
 	FatalLevel
 )
 
 func ParseLevel(level string) LogLevel {
 	level = strings.ToUpper(level)
 	switch level {
-	case "TRACE":
-		return TraceLevel
 	case "DEBUG":
 		return DebugLevel
 	case "INFO":
@@ -41,8 +39,6 @@ func ParseLevel(level string) LogLevel {
 // toZapLevel converts LogLevel to zapcore.Level.
 func (l LogLevel) toZapLevel() zapcore.Level {
 	switch l {
-	case TraceLevel:
-		return zapcore.Level(-1) // Custom trace level.
 	case DebugLevel:
 		return zapcore.DebugLevel
 	case InfoLevel:
@@ -51,6 +47,8 @@ func (l LogLevel) toZapLevel() zapcore.Level {
 		return zapcore.WarnLevel
 	case ErrorLevel:
 		return zapcore.ErrorLevel
+	case PanicLevel:
+		return  zapcore.PanicLevel
 	case FatalLevel:
 		return zapcore.FatalLevel
 	default:

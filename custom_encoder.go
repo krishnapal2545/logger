@@ -22,9 +22,6 @@ func (enc *customEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Fiel
 
 	// Level.
 	levelStr := strings.ToUpper(entry.Level.String())
-	if entry.Level == zapcore.Level(-1) {
-		levelStr = "TRACE"
-	}
 	buf.AppendString(levelStr)
 	buf.AppendString(" | ")
 

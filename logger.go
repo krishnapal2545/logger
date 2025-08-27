@@ -103,8 +103,7 @@ func Sync() error {
 
 func Recover() {
 	if r := recover(); r != nil {
-		Sync()
-		panic(r)
+		Panic(r)
 	}
 	Sync()
 }

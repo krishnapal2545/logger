@@ -6,6 +6,25 @@ import (
 	"testing"
 )
 
+func TestLogging(t *testing.T){
+	if err := Init(); err != nil {
+		panic(err)
+	}
+	defer Recover()
+
+	Debug("testing debug")
+	DebugWithTraceID("debug","test")
+	Info("testing info")
+	InfoWithTraceID("info","test")
+	Warn("testing warn")
+	WarnWithTraceID("warn","test")
+	Error("testing error")
+	ErrorWithTraceID("error","testing")
+	Panic("testing panic")
+	Fatal("testing fatal")
+	FatalWithTraceID("fatal", "testing")
+}
+
 func TestOneMillionLogging(t *testing.T) {
 	if err := Init(); err != nil {
 		panic(err)
