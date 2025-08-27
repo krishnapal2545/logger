@@ -85,11 +85,12 @@ func Init(configs ...Config) error {
 		consoleEnabler,
 	)
 
+
 	// Tee them.
 	core := zapcore.NewTee(fileCore, consoleCore)
 
 	// Build logger.
-	zapLogger := zap.New(core)
+	zapLogger := zap.New(core, zap.AddStacktrace(zap.DPanicLevel))
 	zapLog = &Logger{zap: zapLogger, file: writer.file, buf: writer.buf, flush: writer.flush, fieldPool: fieldPool}
 	return nil
 }
@@ -98,7 +99,6 @@ func Sync() error {
 	if zapLog == nil || zapLog.zap == nil {
 		return errors.New("logger not initialized")
 	}
-	Info("logger sync is being called ...")
 	return zapLog.zap.Sync()
 }
 

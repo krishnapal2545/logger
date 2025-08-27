@@ -4,22 +4,37 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
-func TestLogging(t *testing.T){
+func TestPanic(t *testing.T) {
+	if err := Init(); err != nil {
+		panic(err)
+	}
+	defer Recover()
+	Go(func() {
+		a := 10
+		b := 0
+		_ = a / b
+	})
+	Info("logging after goroutine...")
+	time.Sleep(100 * time.Millisecond)
+}
+
+func TestLogging(t *testing.T) {
 	if err := Init(); err != nil {
 		panic(err)
 	}
 	defer Recover()
 
 	Debug("testing debug")
-	DebugWithTraceID("debug","test")
+	DebugWithTraceID("debug", "test")
 	Info("testing info")
-	InfoWithTraceID("info","test")
+	InfoWithTraceID("info", "test")
 	Warn("testing warn")
-	WarnWithTraceID("warn","test")
+	WarnWithTraceID("warn", "test")
 	Error("testing error")
-	ErrorWithTraceID("error","testing")
+	ErrorWithTraceID("error", "testing")
 	// Panic("testing panic")
 	// Fatal("testing fatal")
 	FatalWithTraceID("fatal", "testing")
@@ -38,22 +53,10 @@ func TestOneMillionLogging(t *testing.T) {
 
 // BenchmarkInfo tests the performance of the Info method (no traceID).
 func BenchmarkInfo(b *testing.B) {
-	// Setup logger.
-	dir := "/logs/benchmark/logger"
-	filename := "app"
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := Init(); err != nil {
 		b.Fatal(err)
 	}
-	config := Config{
-		Dir:             dir,
-		Filename:        filename,
-		FileMinLevel:    DebugLevel,
-		ConsoleMinLevel: ErrorLevel,
-	}
-	if err := Init(config); err != nil {
-		b.Fatal(err)
-	}
-	defer os.RemoveAll(dir) // Clean up after test.
+	defer Recover()
 
 	b.ResetTimer()
 	for i := 0; b.Loop(); i++ {
@@ -63,22 +66,10 @@ func BenchmarkInfo(b *testing.B) {
 
 // BenchmarkInfoWithTraceID tests the performance of the InfoWithTraceID method.
 func BenchmarkInfoWithTraceID(b *testing.B) {
-	// Setup logger.
-	dir := "/logs/benchmark/logger"
-	filename := "app"
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := Init(); err != nil {
 		b.Fatal(err)
 	}
-	config := Config{
-		Dir:             dir,
-		Filename:        filename,
-		FileMinLevel:    DebugLevel,
-		ConsoleMinLevel: ErrorLevel,
-	}
-	if err := Init(config); err != nil {
-		b.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
+	defer Recover()
 
 	b.ResetTimer()
 	for i := 0; b.Loop(); i++ {

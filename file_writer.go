@@ -17,6 +17,10 @@ type safeBufferedWriter struct {
 	flush chan struct{}
 }
 
+const (
+	maxflushbufferlength = 4096
+)
+
 func NewFileAndSafeBufferedWriter(config *Config) (*safeBufferedWriter, error) {
 	// File syncer with timestamped filename.
 	timestamp := time.Now().Format("02-01-2006-15-04-05")
@@ -30,7 +34,7 @@ func NewFileAndSafeBufferedWriter(config *Config) (*safeBufferedWriter, error) {
 	if err != nil {
 		return nil, err
 	}
-	writer := &safeBufferedWriter{file: file, buf: bytes.NewBuffer(make([]byte, 0, 4096)), flush: make(chan struct{}, 1), mu: &sync.Mutex{}}
+	writer := &safeBufferedWriter{file: file, buf: bytes.NewBuffer(make([]byte, 0, maxflushbufferlength)), flush: make(chan struct{}, 1), mu: &sync.Mutex{}}
 	// Start flush goroutine.
 	go func() {
 		ticker := time.NewTicker(50 * time.Millisecond)
@@ -67,7 +71,7 @@ func (w *safeBufferedWriter) Write(p []byte) (n int, err error) {
 
 	n = len(p)
 	// If buffer would exceed 4KB, flush first.
-	if w.buf.Len()+n > 4096 {
+	if w.buf.Len()+n > maxflushbufferlength {
 		if _, err := w.file.Write(w.buf.Bytes()); err != nil {
 			os.Stderr.WriteString("Failed to write to log file: " + err.Error() + "\n")
 		}
