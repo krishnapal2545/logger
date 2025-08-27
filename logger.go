@@ -120,3 +120,10 @@ func Recover() {
 	}
 	Sync()
 }
+
+func Go(fn func()) {
+	go func() {
+		defer Recover()
+		fn()
+	}()
+}
