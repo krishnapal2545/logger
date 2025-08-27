@@ -104,17 +104,14 @@ func Sync() error {
 
 func Recover() {
 	if r := recover(); r != nil {
-		if zapLog != nil || zapLog.zap != nil {
-			Info("logger recover is called with panic attack or error : ", r)
-		} else {
+		if zapLog == nil || zapLog.zap == nil {
 			baselog.Println("logger recover is called without logger initialized with some panic : ", r)
 			return
 		}
 		Panic(r)
+		return
 	}
-	if zapLog != nil || zapLog.zap != nil {
-		Info("logger recover is called without panic attack or error")
-	} else {
+	if zapLog == nil || zapLog.zap == nil {
 		baselog.Println("logger recover is called without logger initialized")
 		return
 	}
