@@ -44,7 +44,9 @@ func Panic(message ...any) {
 		panic("logger is not initialized...")
 	}
 	Sync()
-	zapLog.zap.Panic(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCaller()).Panic(fmt.Sprint(message...))
+
+	// zapLog.zap.Panic(fmt.Sprint(message...))
 }
 
 // Public logging methods with traceID.
