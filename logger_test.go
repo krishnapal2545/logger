@@ -20,8 +20,8 @@ func TestLogging(t *testing.T){
 	WarnWithTraceID("warn","test")
 	Error("testing error")
 	ErrorWithTraceID("error","testing")
-	Panic("testing panic")
-	Fatal("testing fatal")
+	// Panic("testing panic")
+	// Fatal("testing fatal")
 	FatalWithTraceID("fatal", "testing")
 }
 

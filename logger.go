@@ -3,6 +3,7 @@ package logger
 import (
 	"bytes"
 	"errors"
+	baselog "log"
 	"os"
 	"sync"
 
@@ -20,7 +21,7 @@ type Logger struct {
 }
 
 // Global logger instance.
-var log *Logger
+var zapLog *Logger
 
 // Init initializes the global logger with the given config.
 // Call this once, e.g., in main.
@@ -89,27 +90,33 @@ func Init(configs ...Config) error {
 
 	// Build logger.
 	zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	log = &Logger{zap: zapLogger, file: writer.file, buf: writer.buf, flush: writer.flush, fieldPool: fieldPool}
+	zapLog = &Logger{zap: zapLogger, file: writer.file, buf: writer.buf, flush: writer.flush, fieldPool: fieldPool}
 	return nil
 }
 
 func Sync() error {
-	if log == nil || log.zap == nil {
+	if zapLog == nil || zapLog.zap == nil {
 		return errors.New("logger not initialized")
 	}
 	Info("logger sync is being called ...")
-	return log.zap.Sync()
+	return zapLog.zap.Sync()
 }
 
 func Recover() {
 	if r := recover(); r != nil {
-		if log != nil || log.zap != nil {
-			Info("logger recover is called with panic attack or error ", r)
+		if zapLog != nil || zapLog.zap != nil {
+			Info("logger recover is called with panic attack or error : ", r)
+		} else {
+			baselog.Println("logger recover is called without logger initialized with some panic : ", r)
+			return
 		}
 		Panic(r)
 	}
-	if log != nil || log.zap != nil {
+	if zapLog != nil || zapLog.zap != nil {
 		Info("logger recover is called without panic attack or error")
+	} else {
+		baselog.Println("logger recover is called without logger initialized")
+		return
 	}
 	Sync()
 }
