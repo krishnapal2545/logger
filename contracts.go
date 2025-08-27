@@ -7,50 +7,53 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Public logging methods without traceID.
+// Public logging methods without caller by default.
+// Use AddCallerSkip(2) to point to the caller in the main application.
+
 func Debug(message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
 	}
-	zapLog.zap.Debug(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Debug(fmt.Sprint(message...))
 }
+
 func Info(message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
 	}
-	zapLog.zap.Info(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Info(fmt.Sprint(message...))
 }
+
 func Warn(message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
 	}
-	zapLog.zap.Warn(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Warn(fmt.Sprint(message...))
 }
+
 func Error(message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
 	}
-	zapLog.zap.Error(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Error(fmt.Sprint(message...))
 }
+
 func Fatal(message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
 	}
-	Sync()
-	zapLog.zap.Fatal(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Fatal(fmt.Sprint(message...))
 }
+
+// Panic explicitly logs the caller and stacktrace.
 func Panic(message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
 	}
-	Sync()
-	zapLog.zap.WithOptions(zap.AddCaller()).Panic(fmt.Sprint(message...))
-
-	// zapLog.zap.Panic(fmt.Sprint(message...))
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Panic(fmt.Sprint(message...))
 }
 
 // Public logging methods with traceID.
-
 func DebugWithTraceID(traceID string, message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
@@ -59,8 +62,9 @@ func DebugWithTraceID(traceID string, message ...any) {
 	defer zapLog.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
-	zapLog.zap.Debug(fmt.Sprint(message...), *fields...)
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Debug(fmt.Sprint(message...), *fields...)
 }
+
 func InfoWithTraceID(traceID string, message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
@@ -69,8 +73,9 @@ func InfoWithTraceID(traceID string, message ...any) {
 	defer zapLog.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
-	zapLog.zap.Info(fmt.Sprint(message...), *fields...)
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Info(fmt.Sprint(message...), *fields...)
 }
+
 func WarnWithTraceID(traceID string, message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
@@ -79,8 +84,9 @@ func WarnWithTraceID(traceID string, message ...any) {
 	defer zapLog.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
-	zapLog.zap.Warn(fmt.Sprint(message...), *fields...)
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Warn(fmt.Sprint(message...), *fields...)
 }
+
 func ErrorWithTraceID(traceID string, message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
@@ -89,8 +95,9 @@ func ErrorWithTraceID(traceID string, message ...any) {
 	defer zapLog.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
-	zapLog.zap.Error(fmt.Sprint(message...), *fields...)
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Error(fmt.Sprint(message...), *fields...)
 }
+
 func PanicWithTraceID(traceID string, message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
@@ -99,9 +106,9 @@ func PanicWithTraceID(traceID string, message ...any) {
 	defer zapLog.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
-	Sync()
-	zapLog.zap.Panic(fmt.Sprint(message...), *fields...)
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Panic(fmt.Sprint(message...), *fields...)
 }
+
 func FatalWithTraceID(traceID string, message ...any) {
 	if zapLog == nil || zapLog.zap == nil {
 		panic("logger is not initialized...")
@@ -110,6 +117,5 @@ func FatalWithTraceID(traceID string, message ...any) {
 	defer zapLog.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
-	Sync()
-	zapLog.zap.Fatal(fmt.Sprint(message...), *fields...)
+	zapLog.zap.WithOptions(zap.AddCallerSkip(2)).Fatal(fmt.Sprint(message...), *fields...)
 }

@@ -89,7 +89,7 @@ func Init(configs ...Config) error {
 	core := zapcore.NewTee(fileCore, consoleCore)
 
 	// Build logger.
-	zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	zapLogger := zap.New(core)
 	zapLog = &Logger{zap: zapLogger, file: writer.file, buf: writer.buf, flush: writer.flush, fieldPool: fieldPool}
 	return nil
 }

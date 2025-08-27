@@ -72,3 +72,5 @@ func (enc *customEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Fiel
 	buf.AppendByte('\n')
 	return buf, nil
 }
+
+
