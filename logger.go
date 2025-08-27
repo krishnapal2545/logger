@@ -103,7 +103,13 @@ func Sync() error {
 
 func Recover() {
 	if r := recover(); r != nil {
+		if log != nil || log.zap != nil {
+			Info("logger recover is called with panic attack or error ", r)
+		}
 		Panic(r)
+	}
+	if log != nil || log.zap != nil {
+		Info("logger recover is called without panic attack or error")
 	}
 	Sync()
 }
