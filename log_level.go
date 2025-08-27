@@ -1,6 +1,10 @@
 package logger
 
-import "go.uber.org/zap/zapcore"
+import (
+	"strings"
+
+	"go.uber.org/zap/zapcore"
+)
 
 // LogLevel represents the logging level.
 type LogLevel int
@@ -13,6 +17,26 @@ const (
 	ErrorLevel
 	FatalLevel
 )
+
+func ParseLevel(level string) LogLevel {
+	level = strings.ToUpper(level)
+	switch level {
+	case "TRACE":
+		return TraceLevel
+	case "DEBUG":
+		return DebugLevel
+	case "INFO":
+		return InfoLevel
+	case "WARN":
+		return WarnLevel
+	case "ERROR":
+		return ErrorLevel
+	case "FATAL":
+		return FatalLevel
+	default:
+		return InfoLevel
+	}
+}
 
 // toZapLevel converts LogLevel to zapcore.Level.
 func (l LogLevel) toZapLevel() zapcore.Level {

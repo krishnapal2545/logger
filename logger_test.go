@@ -1,14 +1,26 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
 
+func TestOneMillionLogging(t *testing.T) {
+	if err := Init(); err != nil {
+		panic(err)
+	}
+	defer Recover()
+
+	for i := range 10_00_000 {
+		InfoWithTraceID(fmt.Sprintf("trace-id-%v", i), "test message", i, "extra", "extra1", "extra2", 100, map[string]any{"key1": 12, "key2": "krishna"})
+	}
+}
+
 // BenchmarkInfo tests the performance of the Info method (no traceID).
 func BenchmarkInfo(b *testing.B) {
 	// Setup logger.
-	dir := "D:\\logs\\benchmark\\logger"
+	dir := "/logs/benchmark/logger"
 	filename := "app"
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		b.Fatal(err)
@@ -33,7 +45,7 @@ func BenchmarkInfo(b *testing.B) {
 // BenchmarkInfoWithTraceID tests the performance of the InfoWithTraceID method.
 func BenchmarkInfoWithTraceID(b *testing.B) {
 	// Setup logger.
-	dir := "D:\\logs\\benchmark\\logger"
+	dir := "/logs/benchmark/logger"
 	filename := "app"
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		b.Fatal(err)

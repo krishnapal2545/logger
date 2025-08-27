@@ -13,7 +13,10 @@ func Debug(message ...any) { log.zap.Debug(fmt.Sprint(message...)) }
 func Info(message ...any)  { log.zap.Info(fmt.Sprint(message...)) }
 func Warn(message ...any)  { log.zap.Warn(fmt.Sprint(message...)) }
 func Error(message ...any) { log.zap.Error(fmt.Sprint(message...)) }
-func Fatal(message ...any) { log.zap.Fatal(fmt.Sprint(message...)) }
+func Fatal(message ...any) {
+	Sync()
+	log.zap.Fatal(fmt.Sprint(message...))
+}
 
 // Public logging methods with traceID.
 func TraceWithTraceID(traceID string, message ...any) {
@@ -56,5 +59,6 @@ func FatalWithTraceID(traceID string, message ...any) {
 	defer log.fieldPool.Put(fields)
 	*fields = (*fields)[:0]
 	*fields = append(*fields, zap.String("traceid", traceID))
+	Sync()
 	log.zap.Fatal(fmt.Sprint(message...), *fields...)
 }

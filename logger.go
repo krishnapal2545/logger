@@ -2,23 +2,13 @@ package logger
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"os"
-	"path/filepath"
 	"sync"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-// Config for the logger.
-type Config struct {
-	Dir             string   // Directory for log file
-	Filename        string   // Log file name
-	FileMinLevel    LogLevel // Min level for file logging (default: Debug)
-	ConsoleMinLevel LogLevel // Min level for stdout logging (default: Info)
-}
 
 // Logger wraps the Zap logger.
 type Logger struct {
@@ -34,12 +24,18 @@ var log *Logger
 
 // Init initializes the global logger with the given config.
 // Call this once, e.g., in main.
-func Init(config Config) error {
-	if config.FileMinLevel == 0 {
-		config.FileMinLevel = DebugLevel
-	}
-	if config.ConsoleMinLevel == 0 {
-		config.ConsoleMinLevel = InfoLevel
+func Init(configs ...Config) error {
+	var config Config
+	if len(configs) > 0 {
+		config = configs[0]
+		if config.FileMinLevel == 0 {
+			config.FileMinLevel = DebugLevel
+		}
+		if config.ConsoleMinLevel == 0 {
+			config.ConsoleMinLevel = InfoLevel
+		}
+	} else {
+		config = defaultConfig()
 	}
 
 	// Register custom encoder.
@@ -53,21 +49,10 @@ func Init(config Config) error {
 	encCfg.TimeKey = ""   // Handled in custom encoder.
 	encCfg.CallerKey = "" // Handled in custom encoder.
 
-	// File syncer with timestamped filename.
-	timestamp := time.Now().Format("02-01-2006-15-04-05")
-	filename := fmt.Sprintf("%s-%s.log", config.Filename, timestamp) // e.g., app-26-08-2025-15-04-05.log
-	// File syncer.
-	path := filepath.Join(config.Dir, filename)
-	if err := os.MkdirAll(config.Dir, 0755); err != nil {
-		return err
-	}
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	writer, err := NewFileAndSafeBufferedWriter(&config)
 	if err != nil {
 		return err
 	}
-	// Buffered writer for file.
-	buf := bytes.NewBuffer(make([]byte, 0, 4096)) // 4KB buffer.
-	flush := make(chan struct{}, 1)
 
 	// Field pool for zap.Field slices.
 	fieldPool := &sync.Pool{
@@ -76,31 +61,6 @@ func Init(config Config) error {
 			return &slice
 		},
 	}
-
-	// Start flush goroutine.
-	go func() {
-		ticker := time.NewTicker(100 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-flush:
-				if buf.Len() > 0 {
-					if _, err := file.Write(buf.Bytes()); err != nil {
-						fmt.Fprintf(os.Stderr, "Failed to write to log file: %v\n", err)
-					}
-					buf.Reset()
-				}
-			case <-ticker.C:
-				if buf.Len() > 0 {
-					if _, err := file.Write(buf.Bytes()); err != nil {
-						fmt.Fprintf(os.Stderr, "Failed to write to log file: %v\n", err)
-					}
-					buf.Reset()
-				}
-			}
-		}
-	}()
-
 	// Console syncer.
 	consoleSyncer := zapcore.AddSync(os.Stdout)
 
@@ -115,7 +75,7 @@ func Init(config Config) error {
 	// Cores.
 	fileCore := zapcore.NewCore(
 		&customEncoder{Encoder: zapcore.NewJSONEncoder(encCfg)},
-		zapcore.AddSync(&bufferedWriter{file: file, buf: buf, flush: flush}),
+		zapcore.AddSync(writer),
 		fileEnabler,
 	)
 	consoleCore := zapcore.NewCore(
@@ -129,32 +89,21 @@ func Init(config Config) error {
 
 	// Build logger.
 	zapLogger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	log = &Logger{zap: zapLogger, file: file, buf: buf, flush: flush, fieldPool: fieldPool}
+	log = &Logger{zap: zapLogger, file: writer.file, buf: writer.buf, flush: writer.flush, fieldPool: fieldPool}
 	return nil
 }
 
-// bufferedWriter wraps a file with buffering.
-type bufferedWriter struct {
-	file  *os.File
-	buf   *bytes.Buffer
-	flush chan struct{}
+func Sync() error {
+	if log == nil || log.zap == nil {
+		return errors.New("logger not initialized")
+	}
+	return log.zap.Sync()
 }
 
-func (w *bufferedWriter) Write(p []byte) (n int, err error) {
-	n = len(p)
-	if w.buf.Len()+n > 4096 { // Flush if buffer exceeds 4KB.
-		select {
-		case w.flush <- struct{}{}:
-		default:
-		}
+func Recover() {
+	if r := recover(); r != nil {
+		Sync()
+		panic(r)
 	}
-	return w.buf.Write(p)
-}
-
-func (w *bufferedWriter) Sync() error {
-	select {
-	case w.flush <- struct{}{}:
-	default:
-	}
-	return nil
+	Sync()
 }
