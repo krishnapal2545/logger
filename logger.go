@@ -97,6 +97,7 @@ func Sync() error {
 	if log == nil || log.zap == nil {
 		return errors.New("logger not initialized")
 	}
+	Info("logger sync is being called ...")
 	return log.zap.Sync()
 }
 
