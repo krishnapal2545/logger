@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"bytes"
 	"errors"
 	baselog "log"
 	"os"
@@ -14,9 +13,6 @@ import (
 // Logger wraps the Zap logger.
 type Logger struct {
 	zap       *zap.Logger
-	file      *os.File
-	buf       *bytes.Buffer
-	flush     chan struct{}
 	fieldPool *sync.Pool
 }
 
@@ -50,9 +46,26 @@ func Init(configs ...Config) error {
 	encCfg.TimeKey = ""   // Handled in custom encoder.
 	encCfg.CallerKey = "" // Handled in custom encoder.
 
-	writer, err := NewFileAndSafeBufferedWriter(&config)
-	if err != nil {
-		return err
+	var fileCore, consoleCore zapcore.Core
+
+	if config.FileLogging {
+
+		writer, err := NewFileAndSafeBufferedWriter(&config)
+		if err != nil {
+			return err
+		}
+
+		// Level enablers.
+		fileEnabler := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return lvl >= config.FileMinLevel.toZapLevel()
+		})
+
+		// Cores.
+		fileCore = zapcore.NewCore(
+			&customEncoder{Encoder: zapcore.NewJSONEncoder(encCfg)},
+			zapcore.AddSync(writer),
+			fileEnabler,
+		)
 	}
 
 	// Field pool for zap.Field slices.
@@ -65,33 +78,27 @@ func Init(configs ...Config) error {
 	// Console syncer.
 	consoleSyncer := zapcore.AddSync(os.Stdout)
 
-	// Level enablers.
-	fileEnabler := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= config.FileMinLevel.toZapLevel()
-	})
 	consoleEnabler := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl >= config.ConsoleMinLevel.toZapLevel()
 	})
 
-	// Cores.
-	fileCore := zapcore.NewCore(
-		&customEncoder{Encoder: zapcore.NewJSONEncoder(encCfg)},
-		zapcore.AddSync(writer),
-		fileEnabler,
-	)
-	consoleCore := zapcore.NewCore(
+	consoleCore = zapcore.NewCore(
 		&customEncoder{Encoder: zapcore.NewJSONEncoder(encCfg)},
 		consoleSyncer,
 		consoleEnabler,
 	)
 
-
 	// Tee them.
-	core := zapcore.NewTee(fileCore, consoleCore)
+	var core zapcore.Core
+	if config.FileLogging {
+		core = zapcore.NewTee(fileCore, consoleCore)
+	} else {
+		core = zapcore.NewTee(consoleCore)
+	}
 
 	// Build logger.
 	zapLogger := zap.New(core, zap.AddStacktrace(zap.DPanicLevel))
-	zapLog = &Logger{zap: zapLogger, file: writer.file, buf: writer.buf, flush: writer.flush, fieldPool: fieldPool}
+	zapLog = &Logger{zap: zapLogger, fieldPool: fieldPool}
 	return nil
 }
 

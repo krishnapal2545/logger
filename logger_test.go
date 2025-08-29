@@ -41,6 +41,7 @@ func TestLogging(t *testing.T) {
 }
 
 func TestOneMillionLogging(t *testing.T) {
+
 	if err := Init(); err != nil {
 		panic(err)
 	}
@@ -52,8 +53,24 @@ func TestOneMillionLogging(t *testing.T) {
 }
 
 // BenchmarkInfo tests the performance of the Info method (no traceID).
-func BenchmarkInfo(b *testing.B) {
+func BenchmarkInfoonBothFileandConsole(b *testing.B) {
 	if err := Init(); err != nil {
+		b.Fatal(err)
+	}
+	defer Recover()
+
+	b.ResetTimer()
+	for i := 0; b.Loop(); i++ {
+		Info("test message", i, "extra")
+	}
+}
+
+func BenchmarkInfoOnlyConsole(b *testing.B) {
+	config := Config{
+		FileLogging: false,
+		ConsoleMinLevel: ErrorLevel,
+	}
+	if err := Init(config); err != nil {
 		b.Fatal(err)
 	}
 	defer Recover()
