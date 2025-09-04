@@ -72,15 +72,15 @@ error
 ### Manual Configuration
 
 ```bash
-config := logger.Config{
-    Dir:             `/custom/logs`,
-    Filename:        "myapp",
-    FileMinLevel:    logger.InfoLevel,
-    ConsoleMinLevel: logger.ErrorLevel,
-}
-if err := logger.Init(config); err != nil {
-    panic(err)
-}
+    config := logger.Config{
+        Dir:             `/custom/logs`,
+        Filename:        "myapp",
+        FileMinLevel:    logger.InfoLevel,
+        ConsoleMinLevel: logger.ErrorLevel,
+    }
+    if err := logger.Init(config); err != nil {
+        panic(err)
+    }
 ```
 
 ### Usage Logging Methods
