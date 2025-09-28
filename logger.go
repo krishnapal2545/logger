@@ -25,12 +25,6 @@ func Init(configs ...Config) error {
 	var config Config
 	if len(configs) > 0 {
 		config = configs[0]
-		if config.FileMinLevel == 0 {
-			config.FileMinLevel = DebugLevel
-		}
-		if config.ConsoleMinLevel == 0 {
-			config.ConsoleMinLevel = InfoLevel
-		}
 	} else {
 		config = defaultConfig()
 	}
