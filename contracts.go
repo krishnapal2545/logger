@@ -124,3 +124,25 @@ func FatalWithTraceID(traceID string, message ...any) {
 	Sync()
 	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Fatal(fmt.Sprint(message...), *fields...)
 }
+
+func (zapLog *Logger) Info(msg ...any) {
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Info(fmt.Sprint(msg...))
+}
+
+func (zapLog *Logger) Error(msg ...any) {
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Error(fmt.Sprint(msg...))
+}	
+func (zapLog *Logger) Debug(msg ...any) {
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Debug(fmt.Sprint(msg...))
+}
+func (zapLog *Logger) Warn(msg ...any) {
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Warn(fmt.Sprint(msg...))
+}
+func (zapLog *Logger) Fatal(msg ...any) {
+	Sync()
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(1)).Fatal(fmt.Sprint(msg...))
+}
+func (zapLog *Logger) Panic(msg ...any) {
+	Sync()
+	zapLog.zap.WithOptions(zap.AddCaller(), zap.AddCallerSkip(2)).Panic(fmt.Sprint(msg...))
+}

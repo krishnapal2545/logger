@@ -102,6 +102,13 @@ func Init(configs ...Config) error {
 	return nil
 }
 
+func GetLogger() *Logger {
+	if zapLog == nil || zapLog.zap == nil {
+		panic("logger is not initialized...")
+	}
+	return zapLog
+}
+
 func Sync() error {
 	if zapLog == nil || zapLog.zap == nil {
 		return errors.New("logger not initialized")
